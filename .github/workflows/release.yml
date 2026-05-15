@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  prepare:
+    name: Sync version + create draft release
+    runs-on: macos-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing aacli v$VERSION"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Update Cargo.toml version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Replace the first occurrence of `version = "..."` under [package]
+          # with the tag version. Idempotent — no-op if already matches.
+          sed -i.bak -E "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
+          rm Cargo.toml.bak
+          # Refresh Cargo.lock to match
+          cargo update --workspace --offline 2>/dev/null || cargo update --workspace
+
+      - name: Commit version bump if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain Cargo.toml Cargo.lock)" ]]; then
+            git checkout main
+            # Re-apply changes onto main in case the tag was made from a different commit
+            VERSION="${{ steps.version.outputs.version }}"
+            sed -i.bak -E "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
+            rm Cargo.toml.bak
+            cargo update --workspace --offline 2>/dev/null || cargo update --workspace
+            git add Cargo.toml Cargo.lock
+            git commit -m "chore: bump version to $VERSION" || echo "Nothing to commit"
+            git push origin main || echo "Push failed (may already be up to date)"
+          else
+            echo "Cargo.toml already at $VERSION — skipping commit"
+          fi
+
+      - name: Create draft GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --generate-notes \
+              --draft
+          else
+            echo "Release ${GITHUB_REF_NAME} already exists"
+          fi
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: prepare
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            label: macos-aarch64
+          - target: x86_64-apple-darwin
+            label: macos-x86_64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package archive
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          ARCHIVE="aacli-v${VERSION}-${{ matrix.label }}.tar.gz"
+          mkdir -p stage
+          cp target/${{ matrix.target }}/release/aacli stage/
+          cp README.md LICENSE CHANGELOG.md stage/
+          tar -czf "$ARCHIVE" -C stage .
+          shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"
+          ls -la "$ARCHIVE" "$ARCHIVE.sha256"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" \
+            "${ARCHIVE}" \
+            "${ARCHIVE}.sha256" \
+            --clobber
+
+  publish:
+    name: Publish release
+    needs: [prepare, build]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mark release as published (non-draft, latest)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${GITHUB_REF_NAME}" --draft=false --latest
