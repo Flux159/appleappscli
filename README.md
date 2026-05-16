@@ -14,7 +14,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 | `aacli reminders` | ✅ **Working** — create (with due dates), list, complete, delete |
 | `aacli calendar` | ✅ **Working** — add events, list-day, list-calendars |
 | `aacli messages` | ✅ **Working** — send, list (most-recent order), read (requires Full Disk Access for list/read) |
-| `aacli photos` | ✅ **Working** — albums, find (by name/index/id), export to PNG/JPG/original |
+| `aacli photos` | ✅ **Working** — albums, find (by name/index/id), export to PNG/JPG/original (albums/find require Full Disk Access) |
 | `aacli terminal` | ✅ **Working** — new-window, new-tab, send command, list-windows |
 | `aacli mail` | ✅ **Working** — send (to/cc/bcc/from-account), list-mailboxes, list-recent (per-account inbox) |
 
@@ -225,7 +225,8 @@ Output (oldest-to-newest within the most-recent N): `<local_time>\t<me|them>\t<s
 
 ## Photos
 
-> ⚠️ Photos.app AppleScript is slow on large libraries (10K+ photos). `find --name` iterates every media item; `find --index` and `find --id` are faster. All Photos commands are wrapped in a 600s AppleScript timeout.
+- **`albums`** and **`find`** query the Photos library SQLite database at `~/Pictures/Photos Library.photoslibrary/database/Photos.sqlite` directly. This is much faster than driving Photos.app via AppleScript (a 31K-photo library: `find --index 28000` runs in ~50ms instead of timing out past 10 min). It requires **Full Disk Access** for the terminal you run `aacli` from — grant it in **System Settings → Privacy & Security → Full Disk Access**.
+- **`export`** still uses Photos.app via AppleScript so iCloud-only assets are downloaded on demand. UUIDs returned by `find` are accepted as `--id`.
 
 ### List albums
 
@@ -242,7 +243,7 @@ Three lookup modes — choose one:
 aacli photos find --name "IMG_0595"
 aacli photos find --name "IMG_0595" --limit 5
 
-# By library index (1-based, matches the "N of M" position in Photos.app)
+# By library index (1-based, oldest-first by capture date — matches Photos "All Photos" order)
 aacli photos find --index 28301
 
 # By stable photo id (from a prior find call)
@@ -419,9 +420,10 @@ src/
 │   └── read.rs        `messages read`
 ├── photos/
 │   ├── mod.rs
-│   ├── albums.rs      `photos albums`
-│   ├── find.rs        `photos find` (name/index/id)
-│   └── export.rs      `photos export` (uses sips for PNG/JPG conversion)
+│   ├── photosdb.rs    Photos.sqlite read-only access (rusqlite, immutable mode)
+│   ├── albums.rs      `photos albums` (SQLite)
+│   ├── find.rs        `photos find` name/index/id (SQLite)
+│   └── export.rs      `photos export` (AppleScript + sips for PNG/JPG conversion)
 ├── terminal/
 │   ├── mod.rs
 │   ├── new_window.rs    `terminal new-window`

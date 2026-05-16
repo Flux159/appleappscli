@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-16
+
+### Changed
+- `aacli photos albums` and `aacli photos find` now query `~/Pictures/Photos Library.photoslibrary/database/Photos.sqlite` directly via rusqlite instead of driving Photos.app via AppleScript. On a 31K-photo library, `find --index 28000` drops from "hangs past 10 min timeout" to ~50ms; `albums` from several seconds to ~20ms. Requires Full Disk Access (same as messages).
+- `find --name` now matches `ZADDITIONALASSETATTRIBUTES.ZORIGINALFILENAME` (the user-visible "IMG_0595.HEIC") rather than the UUID-derived internal `ZASSET.ZFILENAME`. Searching by familiar filenames now works as expected.
+- `find --index N` is now ordered oldest-first by capture date (`ZDATECREATED ASC`), matching the chronological order Photos.app shows in "All Photos".
+- `photos albums` returns user-created albums (`ZKIND=2`) only. System collections (memories, imports, projects) are excluded.
+- `photos export` is unchanged — still driven via Photos.app AppleScript so iCloud-only originals get downloaded on demand. UUIDs from the new `find` are accepted directly as the `media item id` reference.
+
 ## [0.7.1] - 2026-05-16
 
 ### Fixed
@@ -73,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.8.0
 [0.7.1]: https://github.com/Flux159/appleappscli/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.6.0

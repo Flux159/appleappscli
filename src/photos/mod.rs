@@ -3,6 +3,7 @@
 mod albums;
 mod export;
 mod find;
+mod photosdb;
 
 pub use albums::list_albums;
 pub use export::{ExportFormat, export_photo};

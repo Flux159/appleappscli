@@ -1,5 +1,5 @@
-use crate::applescript::{escape_string, run};
-use anyhow::{Context, Result, anyhow};
+use crate::photos::photosdb::{self, PhotoRow};
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct PhotoInfo {
@@ -10,85 +10,35 @@ pub struct PhotoInfo {
     pub height: i64,
 }
 
+impl From<PhotoRow> for PhotoInfo {
+    fn from(r: PhotoRow) -> Self {
+        PhotoInfo {
+            id: r.uuid,
+            filename: r.original_filename,
+            date: r.date_local,
+            width: r.width,
+            height: r.height,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Query {
-    /// Filename substring match (e.g. "IMG_0595" matches IMG_0595.HEIC, IMG_0595_edit.jpg).
+    /// Filename substring match against ZADDITIONALASSETATTRIBUTES.ZORIGINALFILENAME
+    /// (e.g. "IMG_0595" matches IMG_0595.HEIC, IMG_0595_edit.jpg).
     Name(String),
-    /// 1-based index in the library (matches the "N of M" position Photos shows).
+    /// 1-based index in the library, oldest-first (chronological).
     Index(u64),
-    /// Stable photo id (UUID-like string).
+    /// Stable photo UUID (from a prior `find` call).
     Id(String),
 }
 
-/// Find photos matching the query and return up to `limit` results.
 pub fn find(query: &Query, limit: u32) -> Result<Vec<PhotoInfo>> {
-    // Photos AppleScript ops on large libraries can exceed the default 2-minute
-    // osascript timeout. Wrap with a generous explicit timeout.
-    let script = match query {
-        Query::Name(name) => {
-            let lit = escape_string(name);
-            format!(
-                r#"
-with timeout of 600 seconds
-    tell application "Photos"
-        set out to ""
-        set hits to (media items whose filename contains "{lit}")
-        set n to count of hits
-        if n > {limit} then set n to {limit}
-        repeat with i from 1 to n
-            set p to item i of hits
-            set out to out & (id of p) & tab & (filename of p) & tab & (date of p as «class isot» as string) & tab & (width of p as text) & tab & (height of p as text) & linefeed
-        end repeat
-        return out
-    end tell
-end timeout
-"#,
-                limit = limit
-            )
-        }
-        Query::Index(idx) => format!(
-            r#"
-with timeout of 600 seconds
-    tell application "Photos"
-        set p to media item {idx}
-        return (id of p) & tab & (filename of p) & tab & (date of p as «class isot» as string) & tab & (width of p as text) & tab & (height of p as text)
-    end tell
-end timeout
-"#
-        ),
-        Query::Id(id) => {
-            let lit = escape_string(id);
-            format!(
-                r#"
-with timeout of 600 seconds
-    tell application "Photos"
-        set p to media item id "{lit}"
-        return (id of p) & tab & (filename of p) & tab & (date of p as «class isot» as string) & tab & (width of p as text) & tab & (height of p as text)
-    end tell
-end timeout
-"#
-            )
-        }
+    let conn = photosdb::open()?;
+    let rows = match query {
+        Query::Name(n) => photosdb::find_by_name(&conn, n, limit)?,
+        Query::Index(i) => photosdb::find_by_index(&conn, *i)?.into_iter().collect(),
+        Query::Id(id) => photosdb::find_by_uuid(&conn, id)?.into_iter().collect(),
     };
-
-    let stdout = run(&script).context("finding photos")?;
-    let mut out = Vec::new();
-    for line in stdout.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let parts: Vec<&str> = line.split('\t').collect();
-        if parts.len() < 5 {
-            return Err(anyhow!("unexpected photo find result: {line:?}"));
-        }
-        out.push(PhotoInfo {
-            id: parts[0].to_string(),
-            filename: parts[1].to_string(),
-            date: parts[2].to_string(),
-            width: parts[3].parse().unwrap_or(0),
-            height: parts[4].parse().unwrap_or(0),
-        });
-    }
-    Ok(out)
+    Ok(rows.into_iter().map(PhotoInfo::from).collect())
 }
