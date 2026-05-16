@@ -13,7 +13,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 | `aacli notes` | ✅ **Working** — create, list, append, read, move, attach images |
 | `aacli reminders` | ✅ **Working** — create (with due dates), list, complete, delete |
 | `aacli calendar` | ✅ **Working** — add events, list-day, list-calendars |
-| `aacli messages` | 🚧 **Stub** — Future: send messages, list recent threads |
+| `aacli messages` | ✅ **Working** — send, list (most-recent order), read (requires Full Disk Access for list/read) |
 | `aacli photos` | 🚧 **Stub** — Future: import, list albums, export |
 | `aacli terminal` | 🚧 **Stub** — Future: open new tab/window with command |
 
@@ -188,6 +188,40 @@ aacli calendar add \
 
 Datetime format: `YYYY-MM-DD HH:MM` (24h) or `YYYY-MM-DD` (defaults to 00:00).
 
+## Messages
+
+### Permissions
+
+- **`send`** uses AppleScript and needs Messages.app Automation permission (granted on first prompt).
+- **`list`** and **`read`** query `~/Library/Messages/chat.db` directly, which requires **Full Disk Access** for the terminal you run `aacli` from. Grant it in **System Settings → Privacy & Security → Full Disk Access**.
+
+### Send a message
+
+```bash
+aacli messages send --to "+15551234567" --text "Hello"
+aacli messages send --to "name@example.com" --text "iMessage to email handle"
+```
+
+Uses iMessage if the recipient is on iMessage; falls back to the first available service (SMS) otherwise.
+
+### List chats (most-recent first)
+
+```bash
+aacli messages list                  # last 25 chats
+aacli messages list --limit 50
+```
+
+Output: `<chat_identifier>\t<display_name>\t<last_message_local_time>\t<preview>`. Order matches Messages.app UI (most-recent at top).
+
+### Read recent messages from a chat
+
+```bash
+aacli messages read --chat "+15551234567"
+aacli messages read --chat "group-chat-name" --limit 100
+```
+
+Output (oldest-to-newest within the most-recent N): `<local_time>\t<me|them>\t<sender>\t<text>`.
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -215,7 +249,7 @@ A self-contained static binary means a single download, no package-manager insta
 - [x] Reminders: complete (mark done by id)
 - [x] Reminders: delete
 - [x] Calendar: add, list-day, list-calendars
-- [ ] Messages: list (most-recent order), read, send
+- [x] Messages: list (most-recent order), read, send
 - [ ] Photos: albums, find by name/id, export PNG
 - [ ] Terminal: new-tab, new-window, send-command
 - [ ] Mail: send, list-recent, mailboxes
@@ -248,7 +282,13 @@ src/
 │   ├── add.rs         `calendar add`
 │   ├── list_day.rs    `calendar list-day`
 │   └── list_calendars.rs   `calendar list-calendars`
-├── messages/ photos/ terminal/   stubs
+├── messages/
+│   ├── mod.rs
+│   ├── chatdb.rs      read-only chat.db queries (rusqlite, system sqlite)
+│   ├── send.rs        `messages send` (AppleScript)
+│   ├── list.rs        `messages list`
+│   └── read.rs        `messages read`
+├── photos/ terminal/   stubs
 ```
 
 Each app gets its own module. Adding a new app = new module + clap subcommand + module dispatch.

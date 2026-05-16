@@ -27,10 +27,10 @@ enum Command {
         #[command(subcommand)]
         cmd: calendar::CalendarCommand,
     },
-    /// Messages (stub).
+    /// Messages.app operations (send via iMessage; list/read via chat.db — requires Full Disk Access).
     Messages {
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<String>,
+        #[command(subcommand)]
+        cmd: messages::MessagesCommand,
     },
     /// Photos (stub).
     Photos {
@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         Command::Notes { cmd } => notes::run(cmd),
         Command::Reminders { cmd } => reminders::run(cmd),
         Command::Calendar { cmd } => calendar::run(cmd),
-        Command::Messages { args } => messages::run(args),
+        Command::Messages { cmd } => messages::run(cmd),
         Command::Photos { args } => photos::run(args),
         Command::Terminal { args } => terminal::run(args),
     }

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-16
+
+### Added
+- `aacli messages send` — send a message via iMessage (falls back to SMS) using AppleScript.
+- `aacli messages list` — list chats sorted by most-recent message (matches Messages.app UI order). Reads `~/Library/Messages/chat.db` directly via rusqlite. Requires Full Disk Access for the terminal.
+- `aacli messages read` — read recent messages from a chat by phone/email/guid. Output is local-time formatted with `me|them` direction.
+- Added `rusqlite` dependency (linked dynamically to macOS system SQLite — minimal binary size impact).
+
 ## [0.3.0] - 2026-05-16
 
 ### Added
@@ -36,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.1.0
