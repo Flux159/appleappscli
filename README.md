@@ -15,7 +15,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 | `aacli calendar` | ✅ **Working** — add events, list-day, list-calendars |
 | `aacli messages` | ✅ **Working** — send, list (most-recent order), read (requires Full Disk Access for list/read) |
 | `aacli photos` | ✅ **Working** — albums, find (by name/index/id), export to PNG/JPG/original |
-| `aacli terminal` | 🚧 **Stub** — Future: open new tab/window with command |
+| `aacli terminal` | ✅ **Working** — new-window, new-tab, send command, list-windows |
 
 Contributions for the stubbed subcommands welcome — the module skeletons are in place; see [Contributing](#contributing).
 
@@ -262,6 +262,42 @@ aacli photos export --index 28301 --output-dir ./out --format original
 - `--format png` and `--format jpg` use macOS's built-in `sips` to convert from the original.
 - The output directory is created if missing.
 
+## Terminal
+
+### Open a new window (optionally running a command)
+
+```bash
+aacli terminal new-window
+aacli terminal new-window --command "ssh user@host"
+```
+
+Returns the new window's id on stdout.
+
+### Open a new tab in the front window
+
+```bash
+aacli terminal new-tab
+aacli terminal new-tab --command "htop"
+```
+
+`new-tab` uses System Events to send Cmd+T (Terminal.app doesn't expose tab creation via AppleScript directly). Falls back to opening a new window if no Terminal windows are open.
+
+### Send a command to an existing window/tab
+
+```bash
+aacli terminal send --command "ls -la"                  # front window's selected tab
+aacli terminal send --window 12345 --command "pwd"       # specific window
+aacli terminal send --window 12345 --tab 2 --command "git status"
+```
+
+### List open Terminal windows
+
+```bash
+aacli terminal list-windows
+```
+
+Output: `<window_id>\t<tab_count>\t<title>\t<tty>`. The window id can be used with `terminal send --window`.
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -291,7 +327,7 @@ A self-contained static binary means a single download, no package-manager insta
 - [x] Calendar: add, list-day, list-calendars
 - [x] Messages: list (most-recent order), read, send
 - [x] Photos: albums, find by name/id/index, export PNG/JPG/original
-- [ ] Terminal: new-tab, new-window, send-command
+- [x] Terminal: new-tab, new-window, send-command, list-windows
 - [ ] Mail: send, list-recent, mailboxes
 
 ## Architecture
@@ -333,7 +369,12 @@ src/
 │   ├── albums.rs      `photos albums`
 │   ├── find.rs        `photos find` (name/index/id)
 │   └── export.rs      `photos export` (uses sips for PNG/JPG conversion)
-├── terminal/   stub
+├── terminal/
+│   ├── mod.rs
+│   ├── new_window.rs    `terminal new-window`
+│   ├── new_tab.rs       `terminal new-tab` (uses System Events for Cmd+T)
+│   ├── send.rs          `terminal send`
+│   └── list_windows.rs  `terminal list-windows`
 ```
 
 Each app gets its own module. Adding a new app = new module + clap subcommand + module dispatch.

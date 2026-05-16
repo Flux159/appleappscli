@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-16
+
+### Added
+- `aacli terminal new-window` — open a new Terminal window, optionally running a command. Returns the window id.
+- `aacli terminal new-tab` — open a new tab in the front Terminal window (uses System Events Cmd+T since Terminal.app doesn't expose tab creation via AppleScript directly). Falls back to opening a new window if no windows are open.
+- `aacli terminal send` — send a command to a specific window/tab (or the front window's selected tab by default).
+- `aacli terminal list-windows` — list open Terminal windows with their id, tab count, title, and tty path.
+
 ## [0.5.0] - 2026-05-16
 
 ### Added
@@ -52,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.3.0
