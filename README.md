@@ -10,8 +10,8 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 
 | Subcommand | Status |
 |---|---|
-| `aacli notes` | ✅ **Working** — create from markdown / stdin / HTML, list, folder targeting |
-| `aacli reminders` | ✅ **Working** — create with due dates, list (filtered by list name, with/without completed) |
+| `aacli notes` | ✅ **Working** — create, list, append, read, move, attach images |
+| `aacli reminders` | ✅ **Working** — create (with due dates), list, complete, delete |
 | `aacli calendar` | 🚧 **Stub** — exits with "not implemented yet". Future: add/list events |
 | `aacli messages` | 🚧 **Stub** — Future: send messages, list recent threads |
 | `aacli photos` | 🚧 **Stub** — Future: import, list albums, export |
@@ -89,6 +89,39 @@ aacli notes list --folder "MyFolder"  # notes in folder
 
 Output is one note per line: `<id>\t<name>`.
 
+### Append to an existing note
+
+```bash
+aacli notes append --id "x-coredata://..." --markdown-file extra.md
+echo "## Update\nNew section" | aacli notes append --id "x-coredata://..." --stdin
+aacli notes append --id "x-coredata://..." --html-body "<p>more</p>"
+```
+
+### Read a note's HTML body
+
+```bash
+aacli notes read --id "x-coredata://..."
+```
+
+Pipe through `pandoc -f html -t markdown` or similar if you want markdown.
+
+### Move a note to a different folder
+
+```bash
+aacli notes move --id "x-coredata://..." --folder "Archive"
+```
+
+Folder is created if it doesn't exist.
+
+### Attach an image
+
+```bash
+aacli notes attach --id "x-coredata://..." --image /path/to/photo.png
+aacli notes attach --id "x-coredata://..." --image ~/Downloads/IMG_0595.heic
+```
+
+Works with PNG, JPG, GIF, HEIC, and any image type Notes natively accepts.
+
 ## Reminders
 
 ### Create a reminder
@@ -112,6 +145,18 @@ aacli reminders list --all                 # include completed
 
 Output: `<id>\t<name>\t<completed:true|false>`.
 
+### Complete a reminder
+
+```bash
+aacli reminders complete --id "x-apple-reminder://..."
+```
+
+### Delete a reminder
+
+```bash
+aacli reminders delete --id "x-apple-reminder://..."
+```
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -132,15 +177,17 @@ A self-contained static binary means a single download, no package-manager insta
 
 - [x] Notes: create, list
 - [x] Reminders: create, list
-- [ ] Notes: append (add content to existing note by id)
-- [ ] Notes: read (fetch HTML body by id)
-- [ ] Notes: move (between folders)
-- [ ] Reminders: complete (mark done by id)
-- [ ] Reminders: delete
-- [ ] Calendar: add, list
-- [ ] Messages: send
-- [ ] Photos: import, albums, export
-- [ ] Terminal: new-tab, new-window
+- [x] Notes: append (add content to existing note by id)
+- [x] Notes: read (fetch HTML body by id)
+- [x] Notes: move (between folders)
+- [x] Notes: attach (add image file to existing note)
+- [x] Reminders: complete (mark done by id)
+- [x] Reminders: delete
+- [ ] Calendar: add, list-day, list-calendars
+- [ ] Messages: list (most-recent order), read, send
+- [ ] Photos: albums, find by name/id, export PNG
+- [ ] Terminal: new-tab, new-window, send-command
+- [ ] Mail: send, list-recent, mailboxes
 
 ## Architecture
 
@@ -153,11 +200,17 @@ src/
 ├── notes/
 │   ├── mod.rs         Subcommand types
 │   ├── create.rs      `notes create`
-│   └── list.rs        `notes list`
+│   ├── list.rs        `notes list`
+│   ├── append.rs      `notes append`
+│   ├── read.rs        `notes read`
+│   ├── move_note.rs   `notes move`
+│   └── attach.rs      `notes attach`
 ├── reminders/
 │   ├── mod.rs
 │   ├── create.rs      `reminders create` (with due-date parsing)
-│   └── list.rs        `reminders list`
+│   ├── list.rs        `reminders list`
+│   ├── complete.rs    `reminders complete`
+│   └── delete.rs      `reminders delete`
 ├── calendar/ messages/ photos/ terminal/   stubs
 ```
 

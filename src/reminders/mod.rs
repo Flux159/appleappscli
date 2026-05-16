@@ -1,9 +1,13 @@
 //! Apple Reminders integration.
 
+mod complete;
 mod create;
+mod delete;
 mod list;
 
+pub use complete::complete_reminder;
 pub use create::{CreateOptions, create_reminder};
+pub use delete::delete_reminder;
 pub use list::list_reminders;
 
 use anyhow::Result;
@@ -39,6 +43,20 @@ pub enum RemindersCommand {
         #[arg(long)]
         all: bool,
     },
+
+    /// Mark a reminder as completed by id.
+    Complete {
+        /// Reminder id (e.g. `x-apple-reminderkit://...`).
+        #[arg(long)]
+        id: String,
+    },
+
+    /// Delete a reminder by id.
+    Delete {
+        /// Reminder id (e.g. `x-apple-reminderkit://...`).
+        #[arg(long)]
+        id: String,
+    },
 }
 
 pub fn run(cmd: &RemindersCommand) -> Result<()> {
@@ -66,5 +84,7 @@ pub fn run(cmd: &RemindersCommand) -> Result<()> {
             }
             Ok(())
         }
+        RemindersCommand::Complete { id } => complete_reminder(id),
+        RemindersCommand::Delete { id } => delete_reminder(id),
     }
 }
