@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-16
+
+### Added
+- `aacli photos albums` — list all album names from Photos.app.
+- `aacli photos find` — find photos by filename substring (`--name`), 1-based library index (`--index`), or stable photo id (`--id`). Returns id, filename, ISO date, dimensions.
+- `aacli photos export` — export a photo to a directory. `--format` accepts `original` (as-is), `png`, or `jpg`. PNG/JPG conversion uses macOS `sips`.
+- All Photos AppleScript ops wrapped in a 600s explicit timeout (default osascript timeout is 2 min, which can be exceeded on libraries with 10K+ photos).
+
 ## [0.4.0] - 2026-05-16
 
 ### Added
@@ -44,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.2.0

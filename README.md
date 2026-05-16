@@ -14,7 +14,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 | `aacli reminders` | ✅ **Working** — create (with due dates), list, complete, delete |
 | `aacli calendar` | ✅ **Working** — add events, list-day, list-calendars |
 | `aacli messages` | ✅ **Working** — send, list (most-recent order), read (requires Full Disk Access for list/read) |
-| `aacli photos` | 🚧 **Stub** — Future: import, list albums, export |
+| `aacli photos` | ✅ **Working** — albums, find (by name/index/id), export to PNG/JPG/original |
 | `aacli terminal` | 🚧 **Stub** — Future: open new tab/window with command |
 
 Contributions for the stubbed subcommands welcome — the module skeletons are in place; see [Contributing](#contributing).
@@ -222,6 +222,46 @@ aacli messages read --chat "group-chat-name" --limit 100
 
 Output (oldest-to-newest within the most-recent N): `<local_time>\t<me|them>\t<sender>\t<text>`.
 
+## Photos
+
+> ⚠️ Photos.app AppleScript is slow on large libraries (10K+ photos). `find --name` iterates every media item; `find --index` and `find --id` are faster. All Photos commands are wrapped in a 600s AppleScript timeout.
+
+### List albums
+
+```bash
+aacli photos albums
+```
+
+### Find a photo
+
+Three lookup modes — choose one:
+
+```bash
+# By filename substring (e.g. IMG_0595 matches IMG_0595.HEIC, IMG_0595_edited.jpg)
+aacli photos find --name "IMG_0595"
+aacli photos find --name "IMG_0595" --limit 5
+
+# By library index (1-based, matches the "N of M" position in Photos.app)
+aacli photos find --index 28301
+
+# By stable photo id (from a prior find call)
+aacli photos find --id "F1D2D3E4-..."
+```
+
+Output: `<photo_id>\t<filename>\t<iso_date>\t<width>x<height>`.
+
+### Export a photo (to PNG, JPG, or original)
+
+```bash
+aacli photos export --id "F1D2D3E4-..." --output-dir ~/Pictures/exports --format png
+aacli photos export --name "IMG_0595" --output-dir ./out --format jpg
+aacli photos export --index 28301 --output-dir ./out --format original
+```
+
+- `--format original` exports the original file as-is (HEIC, JPG, PNG, etc.).
+- `--format png` and `--format jpg` use macOS's built-in `sips` to convert from the original.
+- The output directory is created if missing.
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -250,7 +290,7 @@ A self-contained static binary means a single download, no package-manager insta
 - [x] Reminders: delete
 - [x] Calendar: add, list-day, list-calendars
 - [x] Messages: list (most-recent order), read, send
-- [ ] Photos: albums, find by name/id, export PNG
+- [x] Photos: albums, find by name/id/index, export PNG/JPG/original
 - [ ] Terminal: new-tab, new-window, send-command
 - [ ] Mail: send, list-recent, mailboxes
 
@@ -288,7 +328,12 @@ src/
 │   ├── send.rs        `messages send` (AppleScript)
 │   ├── list.rs        `messages list`
 │   └── read.rs        `messages read`
-├── photos/ terminal/   stubs
+├── photos/
+│   ├── mod.rs
+│   ├── albums.rs      `photos albums`
+│   ├── find.rs        `photos find` (name/index/id)
+│   └── export.rs      `photos export` (uses sips for PNG/JPG conversion)
+├── terminal/   stub
 ```
 
 Each app gets its own module. Adding a new app = new module + clap subcommand + module dispatch.

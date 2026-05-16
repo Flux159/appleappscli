@@ -32,10 +32,10 @@ enum Command {
         #[command(subcommand)]
         cmd: messages::MessagesCommand,
     },
-    /// Photos (stub).
+    /// Photos.app operations.
     Photos {
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<String>,
+        #[command(subcommand)]
+        cmd: photos::PhotosCommand,
     },
     /// Terminal (stub).
     Terminal {
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         Command::Reminders { cmd } => reminders::run(cmd),
         Command::Calendar { cmd } => calendar::run(cmd),
         Command::Messages { cmd } => messages::run(cmd),
-        Command::Photos { args } => photos::run(args),
+        Command::Photos { cmd } => photos::run(cmd),
         Command::Terminal { args } => terminal::run(args),
     }
 }
