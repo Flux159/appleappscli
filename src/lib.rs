@@ -1,5 +1,6 @@
 pub mod applescript;
 pub mod calendar;
+pub mod mail;
 pub mod markdown;
 pub mod messages;
 pub mod notes;

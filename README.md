@@ -16,6 +16,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 | `aacli messages` | ✅ **Working** — send, list (most-recent order), read (requires Full Disk Access for list/read) |
 | `aacli photos` | ✅ **Working** — albums, find (by name/index/id), export to PNG/JPG/original |
 | `aacli terminal` | ✅ **Working** — new-window, new-tab, send command, list-windows |
+| `aacli mail` | ✅ **Working** — send (to/cc/bcc/from-account), list-mailboxes, list-recent (per-account inbox) |
 
 Contributions for the stubbed subcommands welcome — the module skeletons are in place; see [Contributing](#contributing).
 
@@ -298,6 +299,42 @@ aacli terminal list-windows
 
 Output: `<window_id>\t<tab_count>\t<title>\t<tty>`. The window id can be used with `terminal send --window`.
 
+## Mail
+
+### Send an email
+
+```bash
+aacli mail send \
+  --to "alice@example.com" --to "bob@example.com" \
+  --cc "boss@example.com" \
+  --subject "Status update" \
+  --body "Hi team, here is the weekly status..."
+
+aacli mail send \
+  --to "alice@example.com" \
+  --subject "From specific account" \
+  --body "Body" \
+  --from-account "Work"
+```
+
+`--to`, `--cc`, `--bcc` accept multiple values (repeat the flag). If `--from-account` is omitted, Mail.app uses the default account.
+
+### List mailboxes
+
+```bash
+aacli mail list-mailboxes
+```
+
+Output: `<account>\t<mailbox>`. Useful for discovering account names (the `--from-account` value matches the first column).
+
+### List recent inbox messages
+
+```bash
+aacli mail list-recent --limit 25
+```
+
+Iterates each account's INBOX (more reliable across macOS versions than the unified `inbox` keyword). Output: `<account>\t<message_id>\t<date>\t<sender>\t<subject>`.
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -314,6 +351,22 @@ Output: `<window_id>\t<tab_count>\t<title>\t<tty>`. The window id can be used wi
 
 A self-contained static binary means a single download, no package-manager install steps, no language runtime to provision, and no virtual-environment management. Cold start is fast enough to use from shell aliases, hooks, and agents without noticeable lag.
 
+## Scope: Apple apps only
+
+This CLI is intentionally scoped to **first-party Apple apps that ship with macOS**. We've considered popular third-party Mac apps and decided to keep them out of scope. Here's the reasoning so you don't have to relitigate it:
+
+| App | Decision | Why |
+|---|---|---|
+| **Slack** | Out of scope | Has a [first-class HTTP API](https://api.slack.com/) and the `slack-cli` (official) plus many community CLIs. AppleScript surface is minimal. Use the API, not AppleScript |
+| **Discord** | Out of scope | Official REST/Gateway APIs + many SDKs. No real AppleScript dictionary |
+| **Signal** | Out of scope | No AppleScript dictionary at all. Use [signal-cli](https://github.com/AsamK/signal-cli) (links to the same account via Signal's official linking protocol) |
+| **WhatsApp** | Out of scope | No AppleScript dictionary. Official approach is the WhatsApp Business API (very limited for personal use) or browser automation |
+| **Chrome / Safari** | Out of scope | Browser automation is better served by [Playwright](https://playwright.dev/), [Puppeteer](https://pptr.dev/), or browser-agent frameworks. AppleScript browser APIs are limited to URL navigation and tab listing |
+
+**The principle:** `aacli` is for apps where AppleScript is the *native* automation interface (the first-party Apple apps). For apps where a documented HTTP API or purpose-built CLI exists, use that — it's more reliable, doesn't require the app to be running, and has better cross-platform support.
+
+If you want a unified CLI that wraps both first-party AppleScript apps and third-party HTTP APIs, that's a separate tool (likely with an MCP-style plugin architecture) — happy to see one built, but it's not this one.
+
 ## Roadmap
 
 - [x] Notes: create, list
@@ -328,7 +381,7 @@ A self-contained static binary means a single download, no package-manager insta
 - [x] Messages: list (most-recent order), read, send
 - [x] Photos: albums, find by name/id/index, export PNG/JPG/original
 - [x] Terminal: new-tab, new-window, send-command, list-windows
-- [ ] Mail: send, list-recent, mailboxes
+- [x] Mail: send, list-mailboxes, list-recent
 
 ## Architecture
 
@@ -375,6 +428,11 @@ src/
 │   ├── new_tab.rs       `terminal new-tab` (uses System Events for Cmd+T)
 │   ├── send.rs          `terminal send`
 │   └── list_windows.rs  `terminal list-windows`
+├── mail/
+│   ├── mod.rs
+│   ├── send.rs          `mail send` (to/cc/bcc/from-account)
+│   ├── mailboxes.rs     `mail list-mailboxes`
+│   └── list_recent.rs   `mail list-recent` (per-account INBOX)
 ```
 
 Each app gets its own module. Adding a new app = new module + clap subcommand + module dispatch.

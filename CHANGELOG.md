@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-16
+
+### Added
+- `aacli mail send` — send email via Mail.app with `--to`/`--cc`/`--bcc` (repeatable), `--subject`, `--body`, and optional `--from-account` to select the sending account.
+- `aacli mail list-mailboxes` — list all `<account>\t<mailbox>` pairs across configured accounts.
+- `aacli mail list-recent` — list recent messages from each account's INBOX. Iterates per-account inbox rather than the unified `inbox` keyword (which is unreliable across macOS versions). Output includes account name, message id, date, sender, and subject.
+- README: added explicit scope decision for third-party apps (Slack, Discord, Signal, WhatsApp, Chrome, Safari) explaining why they belong in their own tools, not this one.
+
 ## [0.6.0] - 2026-05-16
 
 ### Added
@@ -60,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.4.0

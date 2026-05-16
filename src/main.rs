@@ -1,5 +1,5 @@
 use anyhow::Result;
-use appleappscli::{calendar, messages, notes, photos, reminders, terminal};
+use appleappscli::{calendar, mail, messages, notes, photos, reminders, terminal};
 use clap::{Parser, Subcommand};
 
 /// CLI for scripting macOS apps via AppleScript.
@@ -42,6 +42,11 @@ enum Command {
         #[command(subcommand)]
         cmd: terminal::TerminalCommand,
     },
+    /// Mail.app operations.
+    Mail {
+        #[command(subcommand)]
+        cmd: mail::MailCommand,
+    },
 }
 
 fn main() -> Result<()> {
@@ -53,5 +58,6 @@ fn main() -> Result<()> {
         Command::Messages { cmd } => messages::run(cmd),
         Command::Photos { cmd } => photos::run(cmd),
         Command::Terminal { cmd } => terminal::run(cmd),
+        Command::Mail { cmd } => mail::run(cmd),
     }
 }
