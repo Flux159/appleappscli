@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-16
+
+### Added
+- `aacli calendar add` — create a calendar event with title, start/end datetime, calendar, optional notes and location.
+- `aacli calendar list-day` — list events for a specific date (optionally filtered to one calendar). Output includes UID, calendar name, ISO start/end timestamps, summary.
+- `aacli calendar list-calendars` — list all calendar names accessible to Calendar.app.
+
 ## [0.2.0] - 2026-05-16
 
 ### Added
@@ -29,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.1.0

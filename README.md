@@ -12,7 +12,7 @@ CLI for scripting macOS apps from the terminal via AppleScript. Built in Rust.
 |---|---|
 | `aacli notes` | ✅ **Working** — create, list, append, read, move, attach images |
 | `aacli reminders` | ✅ **Working** — create (with due dates), list, complete, delete |
-| `aacli calendar` | 🚧 **Stub** — exits with "not implemented yet". Future: add/list events |
+| `aacli calendar` | ✅ **Working** — add events, list-day, list-calendars |
 | `aacli messages` | 🚧 **Stub** — Future: send messages, list recent threads |
 | `aacli photos` | 🚧 **Stub** — Future: import, list albums, export |
 | `aacli terminal` | 🚧 **Stub** — Future: open new tab/window with command |
@@ -157,6 +157,37 @@ aacli reminders complete --id "x-apple-reminder://..."
 aacli reminders delete --id "x-apple-reminder://..."
 ```
 
+## Calendar
+
+### List your calendars
+
+```bash
+aacli calendar list-calendars
+```
+
+### List events for a specific day
+
+```bash
+aacli calendar list-day --date "2026-05-20"
+aacli calendar list-day --date "2026-05-20" --calendar "Work"
+```
+
+Output: `<uid>\t<calendar>\t<start ISO>\t<end ISO>\t<summary>`.
+
+### Add a calendar event
+
+```bash
+aacli calendar add \
+  --calendar "Home" \
+  --title "Doctor appointment" \
+  --start "2026-05-20 14:00" \
+  --end "2026-05-20 15:00" \
+  --location "123 Main St" \
+  --notes "Bring insurance card"
+```
+
+Datetime format: `YYYY-MM-DD HH:MM` (24h) or `YYYY-MM-DD` (defaults to 00:00).
+
 ## Why not just use osascript?
 
 - **Quote-safe**: HTML bodies routinely contain `"` in attribute values, which breaks naive AppleScript embedding. `aacli` escapes them.
@@ -183,7 +214,7 @@ A self-contained static binary means a single download, no package-manager insta
 - [x] Notes: attach (add image file to existing note)
 - [x] Reminders: complete (mark done by id)
 - [x] Reminders: delete
-- [ ] Calendar: add, list-day, list-calendars
+- [x] Calendar: add, list-day, list-calendars
 - [ ] Messages: list (most-recent order), read, send
 - [ ] Photos: albums, find by name/id, export PNG
 - [ ] Terminal: new-tab, new-window, send-command
@@ -211,7 +242,13 @@ src/
 │   ├── list.rs        `reminders list`
 │   ├── complete.rs    `reminders complete`
 │   └── delete.rs      `reminders delete`
-├── calendar/ messages/ photos/ terminal/   stubs
+├── calendar/
+│   ├── mod.rs
+│   ├── datetime.rs    parse YYYY-MM-DD HH:MM, AppleScript date construction
+│   ├── add.rs         `calendar add`
+│   ├── list_day.rs    `calendar list-day`
+│   └── list_calendars.rs   `calendar list-calendars`
+├── messages/ photos/ terminal/   stubs
 ```
 
 Each app gets its own module. Adding a new app = new module + clap subcommand + module dispatch.

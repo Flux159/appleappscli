@@ -22,10 +22,10 @@ enum Command {
         #[command(subcommand)]
         cmd: reminders::RemindersCommand,
     },
-    /// Calendar (stub).
+    /// Calendar.app operations.
     Calendar {
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
-        args: Vec<String>,
+        #[command(subcommand)]
+        cmd: calendar::CalendarCommand,
     },
     /// Messages (stub).
     Messages {
@@ -49,7 +49,7 @@ fn main() -> Result<()> {
     match &cli.command {
         Command::Notes { cmd } => notes::run(cmd),
         Command::Reminders { cmd } => reminders::run(cmd),
-        Command::Calendar { args } => calendar::run(args),
+        Command::Calendar { cmd } => calendar::run(cmd),
         Command::Messages { args } => messages::run(args),
         Command::Photos { args } => photos::run(args),
         Command::Terminal { args } => terminal::run(args),
