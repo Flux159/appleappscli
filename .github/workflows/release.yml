@@ -35,10 +35,13 @@ jobs:
       - name: Update Cargo.toml version
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          # Replace the first occurrence of `version = "..."` under [package]
-          # with the tag version. Idempotent — no-op if already matches.
-          sed -i.bak -E "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
-          rm Cargo.toml.bak
+          # Replace the FIRST `version = "..."` line in Cargo.toml (the [package]
+          # version, not dependency versions). Portable awk — BSD-compatible on
+          # macOS runners (GNU-only `sed -i 0,/.../` does NOT work here).
+          awk -v v="$VERSION" '!done && /^version = / {$0="version = \"" v "\""; done=1} 1' Cargo.toml > Cargo.toml.new
+          mv Cargo.toml.new Cargo.toml
+          # Show the diff and confirm change applied
+          grep -n '^version = ' Cargo.toml | head -1
           # Refresh Cargo.lock to match
           cargo update --workspace --offline 2>/dev/null || cargo update --workspace
 
@@ -47,15 +50,19 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           if [[ -n "$(git status --porcelain Cargo.toml Cargo.lock)" ]]; then
-            git checkout main
-            # Re-apply changes onto main in case the tag was made from a different commit
             VERSION="${{ steps.version.outputs.version }}"
-            sed -i.bak -E "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
-            rm Cargo.toml.bak
+            # Apply the change to main (the tag may point at an older commit).
+            git checkout main
+            awk -v v="$VERSION" '!done && /^version = / {$0="version = \"" v "\""; done=1} 1' Cargo.toml > Cargo.toml.new
+            mv Cargo.toml.new Cargo.toml
             cargo update --workspace --offline 2>/dev/null || cargo update --workspace
-            git add Cargo.toml Cargo.lock
-            git commit -m "chore: bump version to $VERSION" || echo "Nothing to commit"
-            git push origin main || echo "Push failed (may already be up to date)"
+            if [[ -n "$(git status --porcelain Cargo.toml Cargo.lock)" ]]; then
+              git add Cargo.toml Cargo.lock
+              git commit -m "chore: bump version to $VERSION"
+              git push origin main
+            else
+              echo "main already at $VERSION"
+            fi
           else
             echo "Cargo.toml already at $VERSION — skipping commit"
           fi

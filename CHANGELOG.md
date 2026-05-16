@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-16
+
+### Fixed
+- Release workflow Cargo.toml version bump silently failed on macOS runners because BSD sed doesn't support the GNU `0,/PATTERN/` address range syntax. Switched to portable awk. Result: prior release binaries (v0.2.0–v0.7.0) reported `aacli 0.1.0` from `--version` despite being correctly built; v0.7.1+ reports the correct tag version.
+
 ## [0.7.0] - 2026-05-16
 
 ### Added
@@ -68,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppleScript string escaping (handles `"` and `\` correctly — improvement over naive embedding used by similar tools).
 - Markdown to HTML conversion via `pulldown-cmark` with tables, footnotes, strikethrough, task lists, and smart punctuation enabled.
 
-[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Flux159/appleappscli/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Flux159/appleappscli/releases/tag/v0.7.1
 [0.7.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Flux159/appleappscli/releases/tag/v0.5.0
